@@ -33,7 +33,9 @@ class HomeScreen extends ConsumerWidget {
     final readings = ref.watch(readingsProvider);
     final unsynced = ref.watch(unsyncedCountProvider).value ?? 0;
     final lastSync = ref.watch(lastSyncProvider);
-    ref.watch(syncServiceProvider); // creating the service also starts the first sync
+    ref.watch(
+      syncServiceProvider,
+    ); // creating the service also starts the first sync
 
     return Scaffold(
       appBar: AppBar(

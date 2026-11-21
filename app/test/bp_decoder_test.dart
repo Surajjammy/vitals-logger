@@ -7,11 +7,48 @@ import 'package:vitals_logger/device/fake_bp_cuff.dart';
 import 'package:vitals_logger/device/vital_limits.dart';
 
 // Sample packets as a real capture would look (hex dumps written as byte lists).
-final inflating = Uint8List.fromList([0xFE, 0x01, 65, 0x00]); // 4 bytes: live pressure
+final inflating = Uint8List.fromList([
+  0xFE,
+  0x01,
+  65,
+  0x00,
+]); // 4 bytes: live pressure
 final inflatingMore = Uint8List.fromList([0xFE, 0x01, 140, 0x00]);
-final nineBytes = Uint8List.fromList([0xFF, 0x02, 120, 0x00, 80, 0x00, 0x00, 0x00, 70]); // exactly 9: still "short"
-final normal = Uint8List.fromList([0xFF, 0x02, 118, 0x00, 76, 0x00, 0x00, 0x00, 68, 0x00]);
-final highReading = Uint8List.fromList([0xFF, 0x02, 255, 0x00, 160, 0x00, 0x00, 0x00, 20, 0x00]);
+final nineBytes = Uint8List.fromList([
+  0xFF,
+  0x02,
+  120,
+  0x00,
+  80,
+  0x00,
+  0x00,
+  0x00,
+  70,
+]); // exactly 9: still "short"
+final normal = Uint8List.fromList([
+  0xFF,
+  0x02,
+  118,
+  0x00,
+  76,
+  0x00,
+  0x00,
+  0x00,
+  68,
+  0x00,
+]);
+final highReading = Uint8List.fromList([
+  0xFF,
+  0x02,
+  255,
+  0x00,
+  160,
+  0x00,
+  0x00,
+  0x00,
+  20,
+  0x00,
+]);
 
 void main() {
   final decoder = BpPacketDecoder();
@@ -33,17 +70,27 @@ void main() {
       expect((m.systolic, m.diastolic, m.pulse), (118, 76, 68));
     });
 
-    test('decodes out-of-range values as they are; limits decide what to do', () {
-      final m = decoder.decode(highReading)!;
-      expect((m.systolic, m.diastolic, m.pulse), (255, 160, 20));
-      final problems = VitalLimits.check(sys: m.systolic, dia: m.diastolic, pulseBpm: m.pulse);
-      expect(problems.length, 3);
-    });
+    test(
+      'decodes out-of-range values as they are; limits decide what to do',
+      () {
+        final m = decoder.decode(highReading)!;
+        expect((m.systolic, m.diastolic, m.pulse), (255, 160, 20));
+        final problems = VitalLimits.check(
+          sys: m.systolic,
+          dia: m.diastolic,
+          pulseBpm: m.pulse,
+        );
+        expect(problems.length, 3);
+      },
+    );
   });
 
   group('VitalLimits', () {
     test('in-range values give no problems, edges included', () {
-      expect(VitalLimits.check(sys: 70, dia: 150, pulseBpm: 30, tempF: 106.0), isEmpty);
+      expect(
+        VitalLimits.check(sys: 70, dia: 150, pulseBpm: 30, tempF: 106.0),
+        isEmpty,
+      );
     });
 
     test('one value just outside the range is reported', () {
@@ -73,27 +120,30 @@ void main() {
       });
     });
 
-    test('screen-style pipeline takes one reading and then stops listening', () {
-      fakeAsync((time) {
-        final cuff = FakeBpCuff(interval: const Duration(milliseconds: 100));
-        final results = <BpMeasurement>[];
-        var cancelled = false;
-        cuff.packets
-            .map(decoder.decode)
-            .where((m) => m != null)
-            .cast<BpMeasurement>()
-            .take(1)
-            .listen(results.add, onDone: () => cancelled = true);
+    test(
+      'screen-style pipeline takes one reading and then stops listening',
+      () {
+        fakeAsync((time) {
+          final cuff = FakeBpCuff(interval: const Duration(milliseconds: 100));
+          final results = <BpMeasurement>[];
+          var cancelled = false;
+          cuff.packets
+              .map(decoder.decode)
+              .where((m) => m != null)
+              .cast<BpMeasurement>()
+              .take(1)
+              .listen(results.add, onDone: () => cancelled = true);
 
-        cuff.startMeasurement();
-        time.elapse(const Duration(seconds: 5));
-        cuff.startMeasurement(); // a second measurement must not reach the old listener
-        time.elapse(const Duration(seconds: 5));
+          cuff.startMeasurement();
+          time.elapse(const Duration(seconds: 5));
+          cuff.startMeasurement(); // a second measurement must not reach the old listener
+          time.elapse(const Duration(seconds: 5));
 
-        expect(results.length, 1);
-        expect(cancelled, isTrue);
-        cuff.dispose();
-      });
-    });
+          expect(results.length, 1);
+          expect(cancelled, isTrue);
+          cuff.dispose();
+        });
+      },
+    );
   });
 }

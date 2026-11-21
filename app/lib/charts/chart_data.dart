@@ -8,19 +8,29 @@ const maxDailyRangeDays = 60;
 /// Built from a UTC date so daylight-saving shifts cannot change the count.
 int dayNumber(DateTime time) {
   final local = time.toLocal();
-  return DateTime.utc(local.year, local.month, local.day).difference(DateTime.utc(1970)).inDays;
+  return DateTime.utc(
+    local.year,
+    local.month,
+    local.day,
+  ).difference(DateTime.utc(1970)).inDays;
 }
 
-DateTime dateOfDayNumber(int day) => DateTime.utc(1970).add(Duration(days: day));
+DateTime dateOfDayNumber(int day) =>
+    DateTime.utc(1970).add(Duration(days: day));
 
 /// First day (Monday) of the week containing [day]. 1970-01-01 was a Thursday.
 int weekStart(int day) => day - ((day + 3) % 7);
 
-bool useWeeklyBuckets(DateTime from, DateTime to) => to.difference(from).inDays > maxDailyRangeDays;
+bool useWeeklyBuckets(DateTime from, DateTime to) =>
+    to.difference(from).inDays > maxDailyRangeDays;
 
 /// One point on a chart: the average of all readings in one day or week.
 class ChartPoint {
-  const ChartPoint({required this.day, required this.values, required this.hasUnsynced});
+  const ChartPoint({
+    required this.day,
+    required this.values,
+    required this.hasUnsynced,
+  });
 
   /// Bucket start as a day number; used as the chart's x value.
   final int day;
@@ -64,16 +74,24 @@ List<ChartPoint> aggregate(
   ];
 }
 
-List<ChartPoint> bpPoints(List<Reading> readings, {required bool weekly}) => aggregate(
+List<ChartPoint> bpPoints(List<Reading> readings, {required bool weekly}) =>
+    aggregate(
       readings,
       type: 'bp',
       weekly: weekly,
-      pick: (r) => [r.systolic!.toDouble(), r.diastolic!.toDouble(), r.pulse!.toDouble()],
+      pick: (r) => [
+        r.systolic!.toDouble(),
+        r.diastolic!.toDouble(),
+        r.pulse!.toDouble(),
+      ],
     );
 
-List<ChartPoint> temperaturePoints(List<Reading> readings, {required bool weekly}) => aggregate(
-      readings,
-      type: 'temperature',
-      weekly: weekly,
-      pick: (r) => [r.temperatureF!],
-    );
+List<ChartPoint> temperaturePoints(
+  List<Reading> readings, {
+  required bool weekly,
+}) => aggregate(
+  readings,
+  type: 'temperature',
+  weekly: weekly,
+  pick: (r) => [r.temperatureF!],
+);

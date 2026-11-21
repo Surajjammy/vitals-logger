@@ -58,13 +58,19 @@ class ReadingsRepository {
   }
 
   Future<Reading?> getById(String id) {
-    return (_db.select(_db.readings)..where((r) => r.id.equals(id))).getSingleOrNull();
+    return (_db.select(
+      _db.readings,
+    )..where((r) => r.id.equals(id))).getSingleOrNull();
   }
 
   /// Rows that still need uploading, oldest first.
   Future<List<Reading>> getUploadQueue({required int maxAttempts}) {
     final query = _db.select(_db.readings)
-      ..where((r) => r.syncStatus.equals(SyncStatus.synced.name).not() & r.attempts.isSmallerThanValue(maxAttempts))
+      ..where(
+        (r) =>
+            r.syncStatus.equals(SyncStatus.synced.name).not() &
+            r.attempts.isSmallerThanValue(maxAttempts),
+      )
       ..orderBy([(r) => OrderingTerm.asc(r.measuredAt)]);
     return query.get();
   }
@@ -88,7 +94,11 @@ class ReadingsRepository {
 
   /// Counts the attempt and keeps the error. Once [maxAttempts] is reached
   /// the row is marked `failed` and the queue stops picking it up.
-  Future<void> recordFailure(String id, String error, {required int maxAttempts}) async {
+  Future<void> recordFailure(
+    String id,
+    String error, {
+    required int maxAttempts,
+  }) async {
     final row = await getById(id);
     if (row == null) return;
     final attempts = row.attempts + 1;
@@ -96,7 +106,9 @@ class ReadingsRepository {
       ReadingsCompanion(
         attempts: Value(attempts),
         lastError: Value(error),
-        syncStatus: Value(attempts >= maxAttempts ? SyncStatus.failed : SyncStatus.pending),
+        syncStatus: Value(
+          attempts >= maxAttempts ? SyncStatus.failed : SyncStatus.pending,
+        ),
       ),
     );
   }
