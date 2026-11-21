@@ -57,11 +57,11 @@ class _AddReadingScreenState extends ConsumerState<AddReadingScreen> {
         .cast<BpMeasurement>()
         .take(1) // one result only; take() also cancels the subscription
         .listen((m) {
-      _sys.text = '${m.systolic}';
-      _dia.text = '${m.diastolic}';
-      _pulse.text = '${m.pulse}';
-      setState(() => _measuring = false);
-    });
+          _sys.text = '${m.systolic}';
+          _dia.text = '${m.diastolic}';
+          _pulse.text = '${m.pulse}';
+          setState(() => _measuring = false);
+        });
     cuff.startMeasurement();
   }
 
@@ -73,19 +73,37 @@ class _AddReadingScreenState extends ConsumerState<AddReadingScreen> {
     final hasBp = sys != null && dia != null && pulse != null;
     if (!hasBp && temp == null) return;
 
-    final problems = VitalLimits.check(sys: sys, dia: dia, pulseBpm: pulse, tempF: temp);
+    final problems = VitalLimits.check(
+      sys: sys,
+      dia: dia,
+      pulseBpm: pulse,
+      tempF: temp,
+    );
     if (problems.isNotEmpty && _warning == null) {
-      setState(() => _warning = 'Check the reading again: ${problems.join(', ')}. Press Save again to keep it.');
+      setState(
+        () => _warning =
+            'Check the reading again: ${problems.join(', ')}. Press Save again to keep it.',
+      );
       return;
     }
 
     final repo = ref.read(readingsRepositoryProvider);
     final now = DateTime.now();
     if (hasBp) {
-      await repo.addReading(type: 'bp', systolic: sys, diastolic: dia, pulse: pulse, measuredAt: now);
+      await repo.addReading(
+        type: 'bp',
+        systolic: sys,
+        diastolic: dia,
+        pulse: pulse,
+        measuredAt: now,
+      );
     }
     if (temp != null) {
-      await repo.addReading(type: 'temperature', temperatureF: temp, measuredAt: now);
+      await repo.addReading(
+        type: 'temperature',
+        temperatureF: temp,
+        measuredAt: now,
+      );
     }
     // Not awaited: saving never waits for the network.
     ref.read(syncServiceProvider).syncNow();
@@ -95,13 +113,16 @@ class _AddReadingScreenState extends ConsumerState<AddReadingScreen> {
   @override
   Widget build(BuildContext context) {
     Widget field(TextEditingController c, String label) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: TextField(
-            controller: c,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-          ),
-        );
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: c,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('New reading')),
       body: ListView(
@@ -120,7 +141,10 @@ class _AddReadingScreenState extends ConsumerState<AddReadingScreen> {
           if (_warning != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(_warning!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              child: Text(
+                _warning!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ),
           FilledButton(onPressed: _save, child: const Text('Save')),
         ],

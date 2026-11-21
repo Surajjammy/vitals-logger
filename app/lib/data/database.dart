@@ -17,7 +17,8 @@ class Readings extends Table {
   IntColumn get pulse => integer().nullable()();
   RealColumn get temperatureF => real().nullable()();
   DateTimeColumn get measuredAt => dateTime()(); // stored as UTC
-  TextColumn get syncStatus => textEnum<SyncStatus>().withDefault(Constant(SyncStatus.pending.name))();
+  TextColumn get syncStatus =>
+      textEnum<SyncStatus>().withDefault(Constant(SyncStatus.pending.name))();
   IntColumn get attempts => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -38,8 +39,12 @@ class AppDatabase extends _$AppDatabase {
 }
 
 AppDatabase openFileDatabase() {
-  return AppDatabase(LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return NativeDatabase.createInBackground(File(p.join(dir.path, 'vitals.sqlite')));
-  }));
+  return AppDatabase(
+    LazyDatabase(() async {
+      final dir = await getApplicationDocumentsDirectory();
+      return NativeDatabase.createInBackground(
+        File(p.join(dir.path, 'vitals.sqlite')),
+      );
+    }),
+  );
 }

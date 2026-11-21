@@ -12,8 +12,13 @@ void main() {
   });
   tearDown(() => db.close());
 
-  Future<Reading> addBp(DateTime at) =>
-      repo.addReading(type: 'bp', systolic: 120, diastolic: 80, pulse: 70, measuredAt: at);
+  Future<Reading> addBp(DateTime at) => repo.addReading(
+    type: 'bp',
+    systolic: 120,
+    diastolic: 80,
+    pulse: 70,
+    measuredAt: at,
+  );
 
   test('new reading is saved as pending with a device-made id', () async {
     final r = await addBp(DateTime.utc(2026, 1, 1));
@@ -32,7 +37,10 @@ void main() {
     await sub.cancel();
 
     expect(emissions.last.length, 2);
-    expect(emissions.last.first.measuredAt.isAfter(emissions.last.last.measuredAt), isTrue);
+    expect(
+      emissions.last.first.measuredAt.isAfter(emissions.last.last.measuredAt),
+      isTrue,
+    );
   });
 
   test('unsynced count drops after markSynced', () async {
@@ -59,19 +67,28 @@ void main() {
       await repo.recordNetworkError(r.id, 'connectionError');
     }
     final row = (await repo.getById(r.id))!;
-    expect((row.attempts, row.lastError, row.syncStatus), (0, 'connectionError', SyncStatus.pending));
+    expect(
+      (row.attempts, row.lastError, row.syncStatus),
+      (0, 'connectionError', SyncStatus.pending),
+    );
     expect(await repo.getUploadQueue(maxAttempts: 5), hasLength(1));
   });
 
-  test('recordFailure counts attempts, keeps the error, then marks failed', () async {
-    final r = await addBp(DateTime.utc(2026, 1, 1));
-    await repo.recordFailure(r.id, 'HTTP 500', maxAttempts: 2);
-    var row = (await repo.getById(r.id))!;
-    expect((row.attempts, row.lastError, row.syncStatus), (1, 'HTTP 500', SyncStatus.pending));
+  test(
+    'recordFailure counts attempts, keeps the error, then marks failed',
+    () async {
+      final r = await addBp(DateTime.utc(2026, 1, 1));
+      await repo.recordFailure(r.id, 'HTTP 500', maxAttempts: 2);
+      var row = (await repo.getById(r.id))!;
+      expect(
+        (row.attempts, row.lastError, row.syncStatus),
+        (1, 'HTTP 500', SyncStatus.pending),
+      );
 
-    await repo.recordFailure(r.id, 'HTTP 500', maxAttempts: 2);
-    row = (await repo.getById(r.id))!;
-    expect((row.attempts, row.syncStatus), (2, SyncStatus.failed));
-    expect(await repo.getUploadQueue(maxAttempts: 2), isEmpty);
-  });
+      await repo.recordFailure(r.id, 'HTTP 500', maxAttempts: 2);
+      row = (await repo.getById(r.id))!;
+      expect((row.attempts, row.syncStatus), (2, SyncStatus.failed));
+      expect(await repo.getUploadQueue(maxAttempts: 2), isEmpty);
+    },
+  );
 }

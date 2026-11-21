@@ -19,7 +19,8 @@ class DebugDbScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (list) {
-          int count(SyncStatus s) => list.where((r) => r.syncStatus == s).length;
+          int count(SyncStatus s) =>
+              list.where((r) => r.syncStatus == s).length;
           return ListView(
             padding: const EdgeInsets.all(12),
             children: [
@@ -46,7 +47,9 @@ class _RowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final values = r.type == 'bp' ? '${r.systolic}/${r.diastolic} mmHg, pulse ${r.pulse}' : '${r.temperatureF} °F';
+    final values = r.type == 'bp'
+        ? '${r.systolic}/${r.diastolic} mmHg, pulse ${r.pulse}'
+        : '${r.temperatureF} °F';
     final color = switch (r.syncStatus) {
       SyncStatus.synced => Colors.green,
       SyncStatus.pending => Colors.orange,
@@ -58,16 +61,29 @@ class _RowCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Expanded(child: Text('${r.type}: $values', style: const TextStyle(fontWeight: FontWeight.w600))),
-              Text(r.syncStatus.name.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-            ]),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${r.type}: $values',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Text(
+                  r.syncStatus.name.toUpperCase(),
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
             // Text, not just colour, carries the status, so it stays readable for everyone.
             Text('attempts: ${r.attempts}   last error: ${r.lastError ?? '-'}'),
             Text('measured: ${r.measuredAt.toUtc().toIso8601String()}'),
             Text('created:  ${r.createdAt.toUtc().toIso8601String()}'),
-            SelectableText('id: ${r.id}', style: Theme.of(context).textTheme.bodySmall),
+            SelectableText(
+              'id: ${r.id}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ),
       ),

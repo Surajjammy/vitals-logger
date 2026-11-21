@@ -1,7 +1,11 @@
 import 'dart:typed_data';
 
 class BpMeasurement {
-  const BpMeasurement({required this.systolic, required this.diastolic, required this.pulse});
+  const BpMeasurement({
+    required this.systolic,
+    required this.diastolic,
+    required this.pulse,
+  });
   final int systolic;
   final int diastolic;
   final int pulse;
@@ -17,6 +21,10 @@ class BpPacketDecoder {
   /// It does not judge the values: range checks belong to the clinic limits.
   BpMeasurement? decode(Uint8List packet) {
     if (packet.length <= 9) return null;
-    return BpMeasurement(systolic: packet[2], diastolic: packet[4], pulse: packet[8]);
+    return BpMeasurement(
+      systolic: packet[2],
+      diastolic: packet[4],
+      pulse: packet[8],
+    );
   }
 }

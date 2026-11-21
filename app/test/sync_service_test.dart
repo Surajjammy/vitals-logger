@@ -14,8 +14,10 @@ import 'package:vitals_logger/sync/sync_service.dart';
 class FakeApi implements ReadingsApi {
   final Map<String, Reading> serverStore = {};
   final List<String> calls = []; // ids, in the order they were sent
-  final List<DateTime> callTimes = []; // when each call was made (fake time in fakeAsync tests)
-  Future<void> Function(Reading r)? onUpload; // set to make the call fail or hang
+  final List<DateTime> callTimes =
+      []; // when each call was made (fake time in fakeAsync tests)
+  Future<void> Function(Reading r)?
+  onUpload; // set to make the call fail or hang
   int inFlight = 0;
   int maxInFlight = 0;
 
@@ -35,13 +37,18 @@ class FakeApi implements ReadingsApi {
 }
 
 DioException httpError(int status) => DioException(
-      requestOptions: RequestOptions(path: '/readings'),
-      response: Response(requestOptions: RequestOptions(path: '/readings'), statusCode: status),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: '/readings'),
+  response: Response(
+    requestOptions: RequestOptions(path: '/readings'),
+    statusCode: status,
+  ),
+  type: DioExceptionType.badResponse,
+);
 
-DioException networkError(DioExceptionType type) =>
-    DioException(requestOptions: RequestOptions(path: '/readings'), type: type);
+DioException networkError(DioExceptionType type) => DioException(
+  requestOptions: RequestOptions(path: '/readings'),
+  type: type,
+);
 
 void main() {
   late AppDatabase db;
@@ -55,28 +62,39 @@ void main() {
   });
   tearDown(() => db.close());
 
-  SyncService makeService({int maxAttempts = 5, void Function(DateTime)? onSynced}) => SyncService(
-        repo: repo,
-        api: api,
-        maxAttempts: maxAttempts,
-        onSynced: onSynced,
-      );
+  SyncService makeService({
+    int maxAttempts = 5,
+    void Function(DateTime)? onSynced,
+  }) => SyncService(
+    repo: repo,
+    api: api,
+    maxAttempts: maxAttempts,
+    onSynced: onSynced,
+  );
 
-  Future<Reading> addBp(DateTime at) =>
-      repo.addReading(type: 'bp', systolic: 120, diastolic: 80, pulse: 70, measuredAt: at);
+  Future<Reading> addBp(DateTime at) => repo.addReading(
+    type: 'bp',
+    systolic: 120,
+    diastolic: 80,
+    pulse: 70,
+    measuredAt: at,
+  );
 
-  test('success: uploads oldest first, marks synced, reports last sync time', () async {
-    final newer = await addBp(DateTime.utc(2026, 1, 2));
-    final older = await addBp(DateTime.utc(2026, 1, 1));
-    DateTime? lastSync;
+  test(
+    'success: uploads oldest first, marks synced, reports last sync time',
+    () async {
+      final newer = await addBp(DateTime.utc(2026, 1, 2));
+      final older = await addBp(DateTime.utc(2026, 1, 1));
+      DateTime? lastSync;
 
-    await makeService(onSynced: (t) => lastSync = t).syncNow();
+      await makeService(onSynced: (t) => lastSync = t).syncNow();
 
-    expect(api.calls, [older.id, newer.id]);
-    expect((await repo.getById(older.id))!.syncStatus, SyncStatus.synced);
-    expect((await repo.getById(newer.id))!.syncStatus, SyncStatus.synced);
-    expect(lastSync, isNotNull);
-  });
+      expect(api.calls, [older.id, newer.id]);
+      expect((await repo.getById(older.id))!.syncStatus, SyncStatus.synced);
+      expect((await repo.getById(newer.id))!.syncStatus, SyncStatus.synced);
+      expect(lastSync, isNotNull);
+    },
+  );
 
   test('server 500: stays pending, attempt counted, error stored', () async {
     final r = await addBp(DateTime.utc(2026, 1, 1));
@@ -92,19 +110,23 @@ void main() {
     expect(row.lastError, 'HTTP 500');
   });
 
-  test('timeout: error is stored, but it is the network, so no attempt is used up', () async {
-    final r = await addBp(DateTime.utc(2026, 1, 1));
-    api.onUpload = (_) async => throw networkError(DioExceptionType.receiveTimeout);
+  test(
+    'timeout: error is stored, but it is the network, so no attempt is used up',
+    () async {
+      final r = await addBp(DateTime.utc(2026, 1, 1));
+      api.onUpload = (_) async =>
+          throw networkError(DioExceptionType.receiveTimeout);
 
-    final service = makeService();
-    await service.syncNow();
-    service.dispose();
+      final service = makeService();
+      await service.syncNow();
+      service.dispose();
 
-    final row = (await repo.getById(r.id))!;
-    expect(row.lastError, 'receiveTimeout');
-    expect(row.syncStatus, SyncStatus.pending);
-    expect(row.attempts, 0);
-  });
+      final row = (await repo.getById(r.id))!;
+      expect(row.lastError, 'receiveTimeout');
+      expect(row.syncStatus, SyncStatus.pending);
+      expect(row.attempts, 0);
+    },
+  );
 
   test('which errors count as network errors', () {
     for (final type in [
@@ -113,9 +135,16 @@ void main() {
       DioExceptionType.receiveTimeout,
       DioExceptionType.connectionError,
     ]) {
-      expect(SyncService.isNetworkError(networkError(type)), isTrue, reason: type.name);
+      expect(
+        SyncService.isNetworkError(networkError(type)),
+        isTrue,
+        reason: type.name,
+      );
     }
-    expect(SyncService.isNetworkError(httpError(500)), isFalse); // server answered
+    expect(
+      SyncService.isNetworkError(httpError(500)),
+      isFalse,
+    ); // server answered
     expect(SyncService.isNetworkError(httpError(400)), isFalse);
     expect(SyncService.isNetworkError(Exception('bug')), isFalse);
   });
@@ -153,7 +182,8 @@ void main() {
       expect(row!.attempts, 0);
       expect(row!.lastError, 'connectionError');
 
-      offline = false; // network is back: the next scheduled retry gets it through
+      offline =
+          false; // network is back: the next scheduled retry gets it through
       settle(const Duration(minutes: 2));
       repo.getById(r.id).then((v) => row = v);
       settle();
@@ -172,13 +202,15 @@ void main() {
 
       addBp(DateTime.utc(2026, 1, 1));
       settle();
-      api.onUpload = (_) async => throw networkError(DioExceptionType.connectionTimeout);
+      api.onUpload = (_) async =>
+          throw networkError(DioExceptionType.connectionTimeout);
       final service = makeService();
       service.syncNow();
       settle(const Duration(minutes: 6));
 
       final gaps = [
-        for (var i = 1; i < api.callTimes.length; i++) api.callTimes[i].difference(api.callTimes[i - 1]).inSeconds
+        for (var i = 1; i < api.callTimes.length; i++)
+          api.callTimes[i].difference(api.callTimes[i - 1]).inSeconds,
       ];
       expect(gaps.take(8), [2, 4, 8, 16, 32, 60, 60, 60]);
       service.dispose();
@@ -194,51 +226,69 @@ void main() {
 
       addBp(DateTime.utc(2026, 1, 1));
       settle();
-      api.onUpload = (_) async => throw networkError(DioExceptionType.connectionError);
+      api.onUpload = (_) async =>
+          throw networkError(DioExceptionType.connectionError);
       final service = makeService();
       service.syncNow();
-      settle(const Duration(seconds: 15)); // calls at 0, 2, 6, 14 s: next wait would be 16 s
+      settle(
+        const Duration(seconds: 15),
+      ); // calls at 0, 2, 6, 14 s: next wait would be 16 s
       final before = api.calls.length;
       expect(before, 4);
 
       service.syncNow(); // e.g. Wi-Fi came back
       settle();
-      expect(api.calls.length, before + 1); // tried immediately, did not wait for the 16 s timer
+      expect(
+        api.calls.length,
+        before + 1,
+      ); // tried immediately, did not wait for the 16 s timer
 
       settle(const Duration(seconds: 2));
-      expect(api.calls.length, before + 2); // and the wait is 2 s again, not 32 s
+      expect(
+        api.calls.length,
+        before + 2,
+      ); // and the wait is 2 s again, not 32 s
       service.dispose();
     });
   });
 
-  test('server rejections still count: 500 uses attempts, network errors do not', () async {
-    final a = await addBp(DateTime.utc(2026, 1, 1));
-    api.onUpload = (_) async => throw httpError(500);
-    final service = makeService(maxAttempts: 1);
-    await service.syncNow();
-    expect((await repo.getById(a.id))!.syncStatus, SyncStatus.failed);
+  test(
+    'server rejections still count: 500 uses attempts, network errors do not',
+    () async {
+      final a = await addBp(DateTime.utc(2026, 1, 1));
+      api.onUpload = (_) async => throw httpError(500);
+      final service = makeService(maxAttempts: 1);
+      await service.syncNow();
+      expect((await repo.getById(a.id))!.syncStatus, SyncStatus.failed);
 
-    final b = await addBp(DateTime.utc(2026, 1, 2));
-    api.onUpload = (_) async => throw networkError(DioExceptionType.connectionError);
-    await service.syncNow();
-    service.dispose();
-    final row = (await repo.getById(b.id))!;
-    expect((row.syncStatus, row.attempts), (SyncStatus.pending, 0));
-  });
+      final b = await addBp(DateTime.utc(2026, 1, 2));
+      api.onUpload = (_) async =>
+          throw networkError(DioExceptionType.connectionError);
+      await service.syncNow();
+      service.dispose();
+      final row = (await repo.getById(b.id))!;
+      expect((row.syncStatus, row.attempts), (SyncStatus.pending, 0));
+    },
+  );
 
-  test('duplicate send: server keeps one copy and the row still ends up synced', () async {
-    final r = await addBp(DateTime.utc(2026, 1, 1));
-    final service = makeService();
-    await service.syncNow();
+  test(
+    'duplicate send: server keeps one copy and the row still ends up synced',
+    () async {
+      final r = await addBp(DateTime.utc(2026, 1, 1));
+      final service = makeService();
+      await service.syncNow();
 
-    // Pretend the app never learned the first upload succeeded.
-    await db.customStatement("UPDATE readings SET sync_status = 'pending' WHERE id = '${r.id}'");
-    await service.syncNow();
+      // Pretend the app never learned the first upload succeeded.
+      await db.customStatement(
+        "UPDATE readings SET sync_status = 'pending' WHERE id = '${r.id}'",
+      );
+      await service.syncNow();
 
-    expect(api.calls, [r.id, r.id]);
-    expect(api.serverStore.length, 1);
-    expect((await repo.getById(r.id))!.syncStatus, SyncStatus.synced);
-  });
+      expect(api.calls, [r.id, r.id]);
+      expect(api.serverStore.length, 1);
+      expect((await repo.getById(r.id))!.syncStatus, SyncStatus.synced);
+    },
+  );
 
   test('app killed mid-sync: row stays pending, next start sends it again without a duplicate', () async {
     final r = await addBp(DateTime.utc(2026, 1, 1));
@@ -261,10 +311,15 @@ void main() {
   test('two syncNow calls at once never run two loops', () async {
     await addBp(DateTime.utc(2026, 1, 1));
     await addBp(DateTime.utc(2026, 1, 2));
-    api.onUpload = (_) => Future<void>.delayed(const Duration(milliseconds: 20));
+    api.onUpload = (_) =>
+        Future<void>.delayed(const Duration(milliseconds: 20));
 
     final service = makeService();
-    await Future.wait([service.syncNow(), service.syncNow(), service.syncNow()]);
+    await Future.wait([
+      service.syncNow(),
+      service.syncNow(),
+      service.syncNow(),
+    ]);
 
     expect(api.maxInFlight, 1);
     expect(api.calls.length, 2); // each reading sent once
@@ -331,7 +386,8 @@ void main() {
 
   group('DioReadingsApi', () {
     Future<void> uploadWithStatus(int status) async {
-      final dio = Dio(BaseOptions(baseUrl: 'http://test'))..httpClientAdapter = _StatusAdapter(status);
+      final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+        ..httpClientAdapter = _StatusAdapter(status);
       final r = await addBp(DateTime.utc(2026, 1, 1));
       await DioReadingsApi(dio).upload(r);
     }
@@ -352,10 +408,18 @@ class _StatusAdapter implements HttpClientAdapter {
   final int status;
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
-    return ResponseBody.fromString('{}', status, headers: {
-      Headers.contentTypeHeader: ['application/json'],
-    });
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString(
+      '{}',
+      status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
   }
 
   @override

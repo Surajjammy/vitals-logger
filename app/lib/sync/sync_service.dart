@@ -35,7 +35,9 @@ class SyncService {
   Duration backoffDelay(int failures) {
     // Clamp the exponent: a huge shift would overflow to 0 and retry with no wait.
     final ms = baseDelay.inMilliseconds * (1 << (failures - 1).clamp(0, 20));
-    return Duration(milliseconds: ms > maxDelay.inMilliseconds ? maxDelay.inMilliseconds : ms);
+    return Duration(
+      milliseconds: ms > maxDelay.inMilliseconds ? maxDelay.inMilliseconds : ms,
+    );
   }
 
   /// Safe to call from anywhere, any number of times (app start, new reading,
@@ -81,9 +83,14 @@ class SyncService {
         }
 
         // The server answered and refused (or something else broke): this counts.
-        await repo.recordFailure(reading.id, _describe(e), maxAttempts: maxAttempts);
+        await repo.recordFailure(
+          reading.id,
+          _describe(e),
+          maxAttempts: maxAttempts,
+        );
         final attempts = reading.attempts + 1;
-        if (attempts >= maxAttempts) continue; // now `failed`, move on to the next row
+        if (attempts >= maxAttempts)
+          continue; // now `failed`, move on to the next row
         // Stop the loop, so newer rows are not sent before this older one.
         _retryTimer = Timer(backoffDelay(attempts), _run);
         return;

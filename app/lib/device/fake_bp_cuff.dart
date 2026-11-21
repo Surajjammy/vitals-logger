@@ -41,7 +41,20 @@ class FakeBpCuff implements BpCuff {
         _controller.add(Uint8List.fromList([0xFE, 0x01, 40 + tick * 25, 0x00]));
       } else {
         // Final packet, 10 bytes. Bytes 0, 1, 3, 5, 6, 7 are filler/status.
-        _controller.add(Uint8List.fromList([0xFF, 0x02, systolic, 0x00, diastolic, 0x00, 0x00, 0x00, pulse, 0x00]));
+        _controller.add(
+          Uint8List.fromList([
+            0xFF,
+            0x02,
+            systolic,
+            0x00,
+            diastolic,
+            0x00,
+            0x00,
+            0x00,
+            pulse,
+            0x00,
+          ]),
+        );
         timer.cancel();
       }
     });

@@ -28,25 +28,39 @@ void main() {
   });
 
   Future<void> pumpScreen(WidgetTester tester) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        readingsRepositoryProvider.overrideWithValue(ReadingsRepository(db)),
-        bpCuffProvider.overrideWithValue(cuff),
-        // Sync is not under test here; a service whose uploads fail quietly is enough.
-        syncServiceProvider.overrideWithValue(
-          SyncService(repo: ReadingsRepository(db), api: _NoApi(), maxAttempts: 1),
-        ),
-      ],
-      child: const MaterialApp(home: AddReadingScreen()),
-    ));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readingsRepositoryProvider.overrideWithValue(ReadingsRepository(db)),
+          bpCuffProvider.overrideWithValue(cuff),
+          // Sync is not under test here; a service whose uploads fail quietly is enough.
+          syncServiceProvider.overrideWithValue(
+            SyncService(
+              repo: ReadingsRepository(db),
+              api: _NoApi(),
+              maxAttempts: 1,
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: AddReadingScreen()),
+      ),
+    );
   }
 
   Future<List<Reading>> stored() => ReadingsRepository(db).watchAll().first;
 
-  testWidgets('out-of-range: first save warns, second save stores it', (tester) async {
+  testWidgets('out-of-range: first save warns, second save stores it', (
+    tester,
+  ) async {
     await pumpScreen(tester);
-    await tester.enterText(find.widgetWithText(TextField, 'Systolic (mmHg)'), '300');
-    await tester.enterText(find.widgetWithText(TextField, 'Diastolic (mmHg)'), '80');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Systolic (mmHg)'),
+      '300',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Diastolic (mmHg)'),
+      '80',
+    );
     await tester.enterText(find.widgetWithText(TextField, 'Pulse (bpm)'), '70');
 
     await tester.tap(find.text('Save'));
@@ -63,7 +77,10 @@ void main() {
 
   testWidgets('in-range value saves on the first press', (tester) async {
     await pumpScreen(tester);
-    await tester.enterText(find.widgetWithText(TextField, 'Temperature (°F)'), '98.6');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Temperature (°F)'),
+      '98.6',
+    );
     await tester.tap(find.text('Save'));
     await tester.pump();
 
@@ -71,11 +88,16 @@ void main() {
     expect((await tester.runAsync(stored))!.length, 1);
   });
 
-  testWidgets('editing a value after the warning asks for a fresh check', (tester) async {
+  testWidgets('editing a value after the warning asks for a fresh check', (
+    tester,
+  ) async {
     await pumpScreen(tester);
     final sys = find.widgetWithText(TextField, 'Systolic (mmHg)');
     await tester.enterText(sys, '300');
-    await tester.enterText(find.widgetWithText(TextField, 'Diastolic (mmHg)'), '80');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Diastolic (mmHg)'),
+      '80',
+    );
     await tester.enterText(find.widgetWithText(TextField, 'Pulse (bpm)'), '70');
     await tester.tap(find.text('Save'));
     await tester.pump();
@@ -86,15 +108,22 @@ void main() {
     expect(find.textContaining('Check the reading again'), findsNothing);
   });
 
-  testWidgets('Read from device fills the form from the final packet', (tester) async {
+  testWidgets('Read from device fills the form from the final packet', (
+    tester,
+  ) async {
     await pumpScreen(tester);
     await tester.tap(find.text('Read from device'));
     await tester.pump(); // starts the cuff timer
-    await tester.pump(const Duration(milliseconds: 200)); // 5 short + 1 final packet
+    await tester.pump(
+      const Duration(milliseconds: 200),
+    ); // 5 short + 1 final packet
 
     expect(find.widgetWithText(TextField, '118'), findsOneWidget);
     expect(find.widgetWithText(TextField, '76'), findsOneWidget);
     expect(find.widgetWithText(TextField, '68'), findsOneWidget);
-    expect(find.text('Read from device'), findsOneWidget); // button is enabled again
+    expect(
+      find.text('Read from device'),
+      findsOneWidget,
+    ); // button is enabled again
   });
 }
