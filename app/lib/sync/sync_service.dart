@@ -89,8 +89,10 @@ class SyncService {
           maxAttempts: maxAttempts,
         );
         final attempts = reading.attempts + 1;
-        if (attempts >= maxAttempts)
-          continue; // now `failed`, move on to the next row
+        if (attempts >= maxAttempts) {
+          continue;
+        }
+        // now `failed`, move on to the next row
         // Stop the loop, so newer rows are not sent before this older one.
         _retryTimer = Timer(backoffDelay(attempts), _run);
         return;
