@@ -23,9 +23,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          # To pin the version (you use FVM), replace the line above with:
-          # flutter-version: "3.x.x"   # match your .fvmrc
+          flutter-version: "3.50.0"   # keep in sync with your local/FVM version
           cache: true
 
       - name: Get dependencies
@@ -69,7 +67,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: "3.50.0"   # keep in sync with your local/FVM version
           cache: true
 
       - run: flutter pub get
