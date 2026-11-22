@@ -74,8 +74,9 @@ jobs:
 
       # Debug-signed APK is enough to prove the build works.
       # Release signing (keystore via GitHub Secrets) can be added later.
+      # --build-number makes every upload a new version for testers' phones
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --build-number=${{ github.run_number }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -83,3 +84,12 @@ jobs:
           name: app-release-apk
           path: app/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
+
+      - name: Distribute to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: testers
+          file: app/build/app/outputs/flutter-apk/app-release.apk
+          releaseNotes: "Build ${{ github.run_number }} from main"
